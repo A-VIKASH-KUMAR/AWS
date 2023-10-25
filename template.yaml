@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  python3.9
+
+  Sample SAM Template for s3-and-secrets-manager
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+
+    Tracing: Active
+  Api:
+    TracingEnabled: true
+Resources:
+  s3AndSecretsManagerFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      PackageType: Image
+      ImageUri: s3andsecretsmanagerfunction:python3.9-v1
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          S3_SECRET_NAME: s3Secret
+      Policies: {
+        "Version": "2012-10-17",
+        "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:PutSecretValue",
+                "secretsmanager:UpdateSecretVersionStage",
+                "s3:ListAllMyBuckets"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:GetRandomPassword",
+                "s3:ListBucket","s3:GetBucketLocation"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Action": [
+                "ec2:CreateNetworkInterface",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DetachNetworkInterface",
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+                "s3:GetObject",
+                "s3:GetObjectAcl",
+                "s3:DeleteObject"
+            ],
+            "Resource": "*",
+            "Effect": "Allow"
+        },
+        
+        ]
+      }
+
+      Events:
+        s3SecretsApi:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /s3-object
+            Method: post
+        
+  testS3Bucket:
+    Type: AWS::S3::Bucket
+
+        
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: ./hello_world
+      DockerTag: python3.9-v1
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  s3SecretsApi:
+    Description: API Gateway endpoint URL for staging stage for s3 and secrets manager function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/staging/s3-object/"
+  s3AndSecretsManagerFunction:
+    Description: s3 And secrets manager Lambda Function ARN
+    Value: !GetAtt s3AndSecretsManagerFunction.Arn
+  s3AndSecretsManagerFunctionIamRole:
+    Description: Implicit IAM Role created for s3 and secrets manager function
+    Value: !GetAtt s3AndSecretsManagerFunction.Arn
