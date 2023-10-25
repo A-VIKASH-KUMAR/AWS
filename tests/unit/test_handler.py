@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from hello_world import app
+from s3_secrets_manager import app
 
 
 @pytest.fixture()
